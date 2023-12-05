@@ -26,9 +26,7 @@ func main() {
 	for err == nil {
 		game := readGame(string(line))
 		fmt.Println("Game:", game.id, "Legal:", game.isLegal(legalMap))
-		if game.isLegal(legalMap) {
-			sum += game.id
-		}
+		sum += game.getMinSet()
 		line, _, err = reader.ReadLine()
 	}
 	fmt.Println("Answer:", sum)
@@ -96,6 +94,30 @@ func (g game) isLegal(legalMap map[string]int) bool {
 		}
 	}
 	return isLegal
+}
+
+func (g game) getMinSet() int {
+	minimumMap := make(map[string]int)
+
+	minimumMap["red"] = 0
+	minimumMap["green"] = 0
+	minimumMap["blue"] = 0
+
+	for i := range g.gameRecord {
+		for j := range g.gameRecord[i].observations {
+			observation := g.gameRecord[i].observations[j]
+			if minimumMap[observation.diceColor] < observation.amount {
+				minimumMap[observation.diceColor] = observation.amount
+			}
+		}
+	}
+
+	power := 1
+	for _, val := range minimumMap {
+		power = power * val
+	}
+
+	return power
 }
 
 type gameSet struct {
