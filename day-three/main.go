@@ -19,12 +19,6 @@ func main() {
 	file, err := os.Open("./input.txt")
 	check(err)
 
-	legalMap := make(map[string]int)
-
-	legalMap["red"] = 12
-	legalMap["green"] = 13
-	legalMap["blue"] = 14
-
 	reader := bufio.NewReader(file)
 
 	line, _, err := reader.ReadLine()
