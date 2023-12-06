@@ -36,23 +36,24 @@ func main() {
 		line, _, err = reader.ReadLine()
 	}
 
-	partNumbers := []PartNumber{}
+	var answer int
 	for x := range matrix.data {
 		for y := range matrix.data[x] {
 			if matrix.isSymbol(x, y) {
-				fmt.Println("Symbol at x:", x, " y:", y)
-				adjacentPartNumbers := matrix.getAdjacentPartNumbers(x, y)
-				fmt.Println("Adjacent:", adjacentPartNumbers)
-				partNumbers = append(partNumbers, adjacentPartNumbers...)
+				if matrix.get(x, y) == "*" {
+					adjacentPartNumbers := matrix.getAdjacentPartNumbers(x, y)
+					if len(adjacentPartNumbers) == 2 {
+						first, _ := strconv.Atoi(adjacentPartNumbers[0].Number)
+						second, _ := strconv.Atoi(adjacentPartNumbers[1].Number)
+						fmt.Println("Engine at x:", x, " y:", y, "Ratio:", first*second)
+						answer += first * second
+					}
+				}
+
 			}
 		}
 	}
 
-	var answer int
-	for i := range partNumbers {
-		partNumber, _ := strconv.Atoi(partNumbers[i].Number)
-		answer += partNumber
-	}
 	fmt.Println("Anser:", answer)
 }
 
