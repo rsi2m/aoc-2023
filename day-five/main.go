@@ -4,8 +4,10 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 func main() {
@@ -13,48 +15,72 @@ func main() {
 	seeds := parseSeeds()
 	fmt.Println("Seeds:", seeds)
 
-	converters := []string{"soil", "fertilizer", "water", "light", "temperature", "humidity", "location"}
+	converterNames := []string{"soil", "fertilizer", "water", "light", "temperature", "humidity", "location"}
+	var converters [][]Converter
+	for _, converterName := range converterNames {
+		converters = append(converters, parseConverter(converterName))
+	}
 
-	// for _, converterName := range converters {
-	// 	converterList := parseConverter(converterName)
-	// 	for _, seed := range seeds {
-	// 		result := seed
-	// 		for _, converter := range converterList {
-	// 			result = process(converter, seed)
-	// 			if result != seed {
-	// 				break
-	// 			}
-
-	// 		}
-	// 		fmt.Println(converterName, ":", seed, "->", result)
-	// 	}
-
+	chanRes := make(chan int, 1)
+	var wg sync.WaitGroup
+	wg.Add(len(seeds))
+	// for i := 0; i < len(seeds); i++ {
+	// 	go execute(chanRes, i, &wg)
 	// }
 
-	var answer int = 999999999999999999
-	for _, seed := range seeds {
-		result := seed
-		for _, converterName := range converters {
-			converterList := parseConverter(converterName)
-			for _, converter := range converterList {
-				newResult := process(converter, result)
-				if newResult != result {
-					result = newResult
-					break
-				}
+	var x []int
 
-			}
-		}
-		fmt.Println(seed, "->", result)
-		if result < answer {
-			answer = result
+	fmt.Println("Return:", x)
+
+	for _, seed := range seeds {
+		go executeSeed(chanRes, seed, converters, &wg)
+	}
+
+	for {
+		oneResult := <-chanRes
+		x = append(x, oneResult)
+		if len(x) == len(seeds) {
+			break
 		}
 	}
-	fmt.Println("Answer:", answer)
+
+	fmt.Println("Answer:", slices.Min(x))
 
 }
 
-func process(converter Converter, seed int) int {
+func executeSeed(out chan<- int, seed Seed, converters [][]Converter, wg *sync.WaitGroup) {
+	fmt.Println("Doin:", seed)
+	defer wg.Done()
+	var results []int
+	for seedNumber := seed.start; seedNumber < seed.start+seed.rangeNumber; seedNumber++ {
+		results = append(results, process(seedNumber, converters))
+	}
+	fmt.Println(seed.start, "->", slices.Min(results))
+	out <- slices.Min(results)
+}
+
+func execute(out chan<- int, seed int, wg *sync.WaitGroup) {
+	fmt.Println("Doin:", seed)
+	defer wg.Done()
+	out <- seed + 10
+}
+
+func process(seedNumber int, converters [][]Converter) int {
+	result := seedNumber
+	for _, converterList := range converters {
+		for _, converter := range converterList {
+			newResult := convert(converter, result)
+			if newResult != result {
+				result = newResult
+				break
+			}
+
+		}
+	}
+	return result
+}
+
+func convert(converter Converter, seed int) int {
 	if seed >= converter.source && seed <= converter.source+converter.rangeNumber {
 		return seed - converter.source + converter.destination
 	} else {
@@ -62,17 +88,25 @@ func process(converter Converter, seed int) int {
 	}
 }
 
-func parseSeeds() []int {
+func parseSeeds() []Seed {
 	file, _ := os.Open("./input.txt")
 	reader := bufio.NewReader(file)
 	line, _, _ := reader.ReadLine()
 
-	var seedNumbers []int
+	var seedNumbers []Seed
+	var start int
 
-	for _, seedString := range strings.Split(strings.Replace(string(line), "seeds:", "", -1), " ") {
+	for index, seedString := range strings.Split(strings.Replace(string(line), "seeds:", "", -1), " ") {
 		seedNumber, _ := strconv.Atoi(strings.TrimSpace(seedString))
-		if seedNumber > 0 {
-			seedNumbers = append(seedNumbers, seedNumber)
+
+		if seedNumber == 0 {
+			continue
+		}
+
+		if index%2 != 0 {
+			start = seedNumber
+		} else {
+			seedNumbers = append(seedNumbers, Seed{start: start, rangeNumber: seedNumber})
 		}
 	}
 
@@ -124,6 +158,11 @@ func parseConverter(converterName string) []Converter {
 	}
 	return output
 
+}
+
+type Seed struct {
+	start       int
+	rangeNumber int
 }
 
 type Converter struct {
