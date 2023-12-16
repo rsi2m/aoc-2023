@@ -36,7 +36,22 @@ func (h Hand) frequencyTable() freqTable {
 	for _, card := range h.cards {
 		frequencyTable[card.symbol]++
 	}
-	//fmt.Println("Cards:", frequencyTable)
+
+	fmt.Println("BEFORE Cards:", frequencyTable)
+	if frequencyTable["J"] > 0 {
+		var symbolWithMaxFrequency string
+		var maxFreq int = 0
+		for symbol, freq := range frequencyTable {
+			if freq > maxFreq && symbol != "J" {
+				symbolWithMaxFrequency = symbol
+				maxFreq = freq
+			}
+		}
+		frequencyTable[symbolWithMaxFrequency] += frequencyTable["J"]
+		delete(frequencyTable, "J")
+	}
+
+	fmt.Println("AFTER Cards:", frequencyTable)
 	return frequencyTable
 }
 
@@ -59,15 +74,19 @@ func (f freqTable) getFreqNumber() int {
 	}
 
 	fmt.Println("Table:", f, "Max:", maxFrequency, "second:", secondBiggest)
-
 	if maxFrequency > 3 {
-		return maxFrequency
+		return maxFrequency + 2
 	} else if maxFrequency == 3 && secondBiggest == 2 {
-		return maxFrequency
+		return maxFrequency + 2
 	} else if maxFrequency == 3 && secondBiggest != 2 {
-		return 2
+		return maxFrequency + 1
+	} else if maxFrequency == 2 && secondBiggest == 2 {
+		return maxFrequency + 1
+	} else if maxFrequency == 2 && secondBiggest < 2 {
+		return maxFrequency
+	} else {
+		return 1
 	}
-	return maxFrequency
 }
 
 func (h Hands) Len() int {
@@ -119,7 +138,7 @@ func getCard(symbol string) Card {
 	case "Q":
 		return Card{power: 12, symbol: symbol}
 	case "J":
-		return Card{power: 11, symbol: symbol}
+		return Card{power: 1, symbol: symbol}
 	case "T":
 		return Card{power: 10, symbol: symbol}
 	default:
